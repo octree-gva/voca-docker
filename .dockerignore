@@ -1,0 +1,12 @@
+doc
+storage
+k8s
+docker-compose.yml
+.env
+Dockerfile
+.gitlab-ci.yml
+Dockerfile-*
+.git
+.gitignore
+.dump
+log/*

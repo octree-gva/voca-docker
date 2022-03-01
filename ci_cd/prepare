@@ -1,0 +1,40 @@
+#!/bin/bash
+set -e
+gemfiles=$(gem list decidim-generators --remote --all --no-details | grep -o -E '[0-9\.0-9\.0-9]+') 
+node_versions=$(curl -s https://unofficial-builds.nodejs.org/download/release/ | grep -o -E '[0-9]+\.[0-9]+\.[0-9]+' | uniq )
+major_version=""
+minor_version=""
+echo ""> versions.csv
+for generator_version in $gemfiles; do
+    new_major_version=$(echo "$generator_version" | cut -d'.' -f 1)
+    new_minor_version=$(echo "$generator_version" | cut -d'.' -f 2)
+    if [ "$major_version" != "$new_major_version" ] || [ "$minor_version" != "$new_minor_version" ]
+    then
+        node_version=$(curl -s "https://raw.githubusercontent.com/decidim/decidim/release/$new_major_version.$new_minor_version-stable/package.json" | jq '.engines.node' | grep -o -E '[0-9\.0-9\.0-9]+')
+        ruby_version=$(curl -s "https://raw.githubusercontent.com/decidim/decidim/release/$new_major_version.$new_minor_version-stable/.ruby-version")
+        # Check the node version, is it compatible with alpine repo?
+        if [[ ! "${node_versions[*]}" =~ "$node_version" ]]; then
+            # If not, take the highest version of the same major version available. 
+            target_major_version=$(echo $node_version | cut -d'.' -f 1)
+            prev_minor_version=0
+            for nvm in $node_versions; do
+                current_major_version=$(echo $nvm | cut -d'.' -f 1)
+                current_minor_version=$(echo $nvm | cut -d'.' -f 2)
+                current_minor_version_i=$(($current_minor_version + 0))
+                if [ $current_major_version = $target_major_version ] && [ $current_minor_version_i -gt $prev_minor_version ]
+                then
+                    node_version=$nvm
+                    prev_minor_version=$current_minor_version_i
+                fi
+            done
+        fi
+        echo -e "$generator_version;$new_major_version;$new_minor_version;$node_version;$ruby_version\n$(cat versions.csv)" > versions.csv
+        major_version="$new_major_version"
+        minor_version="$new_minor_version"
+        minor_version_i=$(($minor_version + 0))
+        if [ $minor_version_i -eq 23 ]
+        then
+            break
+        fi
+    fi
+done

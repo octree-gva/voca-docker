@@ -1,0 +1,22 @@
+#!/bin/bash
+set -e
+TAG="${CI_COMMIT_TAG:-latest}"
+REG=$CI_REGISTRY_IMAGE
+DOCKER_PATH="$CI_PROJECT_DIR/Dockerfile"
+while IFS=";" read -r decidim_version major_version minor_version node_version ruby_version
+do    
+    if [ $minor_version = $DECIDIM_VERSION ]; then
+        REP_GRP="prod-$major_version.$minor_version"
+        DEV_REP_GRP="dev-$major_version.$minor_version"
+        /kaniko/executor \
+            --context "$CI_PROJECT_DIR" \
+            --dockerfile $DOCKER_PATH-production \
+            --build-arg DEV_PATH=$REG/$DEV_REP_GRP:$TAG \
+            --build-arg NODE_VERSION=$node_version \
+            --build-arg ALPINE_RUBY_VERSION=$ruby_version \
+            --destination $REG/$REP_GRP:$TAG \
+            --cache 
+        break
+    fi
+
+done < versions.csv

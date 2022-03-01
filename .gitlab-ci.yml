@@ -1,0 +1,76 @@
+# Import des templates de jobs pré-configurés
+include:
+  - project: o/infra/templates
+    file: /gitlab-ci/includes/jobs.yaml
+
+stages:
+  - test
+  - analyze
+  - version
+  - build
+  - deploy
+
+
+##
+# Fetch all versions of decidim-generators, to compile the last
+# minor version available for each stable release.
+build:prepare: 
+  stage: version
+  rules:
+      - if: '$CI_COMMIT_BRANCH =~ /^lts*/'
+  before_script:
+    - apk add --update jq ruby curl bash
+  script:
+    - bash ./ci_cd/prepare
+  artifacts:
+    paths: 
+      - versions.csv
+    expire_in: 1 days
+
+# =================================================================
+# SHARED SCRIPTS
+# =================================================================
+
+##
+# Run a script in the bin folder. Will execute the "$BUILD_SCRIPT" file
+.script_runner: &script_runner   
+  stage: build
+  variables:
+    BUILD_SCRIPT: ""
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  dependencies:
+    - build:prepare
+  script:
+    - echo "45.66.221.1 npm-8ee.hidora.com" >> /etc/hosts
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - sh "./.docker/ci_cd/$BUILD_SCRIPT"
+
+024:dev: 
+  <<: *script_runner
+  needs: ["build:prepare"]
+  variables:
+    BUILD_SCRIPT: "dev"
+    DECIDIM_VERSION: "24"
+024:production: 
+  <<: *script_runner
+  needs: ["build:prepare", "024:dev"]
+  variables:
+    BUILD_SCRIPT: "production"
+    DECIDIM_VERSION: "24"
+
+
+023:dev: 
+  <<: *script_runner
+  needs: ["build:prepare"]
+  variables:
+    BUILD_SCRIPT: "dev"
+    DECIDIM_VERSION: "23"
+023:production: 
+  <<: *script_runner
+  needs: ["build:prepare", "023:dev"]
+  variables:
+    BUILD_SCRIPT: "production"
+    DECIDIM_VERSION: "23"
+
