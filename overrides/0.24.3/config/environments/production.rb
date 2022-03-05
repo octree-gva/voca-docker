@@ -55,7 +55,7 @@ Rails.application.configure do
 
   # Use the lowest log level to ensure availability of diagnostic information
   # when problems arise.
-  # config.log_level = :debug
+  config.log_level = ENV.fetch("DECIDIM_LOG_LEVEL", "debug").to_sym
 
   # Prepend all log lines with the following tags.
   config.log_tags = [ :request_id ]
@@ -82,17 +82,16 @@ Rails.application.configure do
   # Send deprecation notices to registered listeners.
   config.active_support.deprecation = :notify
 
-
-
+  config.action_mailer.delivery_method = :smtp
   config.action_mailer.smtp_settings = {
-    :address        => Rails.application.secrets.smtp_address,
-    :port           => Rails.application.secrets.smtp_port,
-    :authentication => Rails.application.secrets.smtp_authentication,
-    :user_name      => Rails.application.secrets.smtp_username,
-    :password       => Rails.application.secrets.smtp_password,
-    :domain         => Rails.application.secrets.smtp_domain,
-    :enable_starttls_auto => Rails.application.secrets.smtp_starttls_auto,
-    :openssl_verify_mode => 'none'
+    address: ENV.fetch("SMTP_ADDRESS", ""),
+    port: ENV.fetch("SMTP_PORT", "587"),
+    authentication: ENV.fetch("SMTP_AUTHENTICATION", "plain"),
+    user_name: ENV.fetch("SMTP_USERNAME", ""),
+    password: ENV.fetch("SMTP_PASSWORD", ""),
+    domain: ENV.fetch("SMTP_DOMAIN") { ENV.fetch("SMTP_ADDRESS", "") },
+    enable_starttls_auto: env_enabled?("SMTP_STARTTLS_AUTO", "enabled"),
+    openssl_verify_mode: ENV.fetch("SMTP_VERIFY_MODE", "none")
   }
 
   # Use a different logger for distributed setups.
