@@ -6,15 +6,13 @@ ARG USER_UID=1001
 ARG GROUP=admin
 ARG GROUP_UID=1001
 ARG DEV_PATH
+ARG DECIDIM_VERSION=0.24.3
 
 FROM $DEV_PATH  AS build
+RUN SECRET_KEY_BASE=assets bundle exec rails assets:precompile
 
-RUN source $NVM_DIR/nvm.sh; nvm use $NODE_VERSION && \
-    SECRET_KEY_BASE=assets bundle exec rails assets:precompile
 
-########################################################################
-# Final layer
-########################################################################
+
 FROM ruby:${ALPINE_RUBY_VERSION}-alpine
 LABEL contact.creator="hadrien@octree.ch"\
      contact.maintainer1="tim@octree.ch" \
@@ -26,14 +24,14 @@ ARG USER
 ARG USER_UID
 ARG GROUP
 ARG GROUP_UID
-
+ARG DECIDIM_VERSION
 ENV USER=$USER \
     USER_UID=$USER_UID \
     GROUP=$GROUP\
     GROUP_UID=$GROUP_UID \
+    NODE_VERSION=$NODE_VERSION \
     RAILS_ENV=production \
     RACK_ENV=production \
-    NODE_VERSION=$NODE_VERSION \
     RAILS_ROOT=/home/$USER/app \ 
     ROOT=/home/$USER/app \ 
     HOME_PATH=/home/$USER/app \ 
@@ -63,8 +61,17 @@ ENV USER=$USER \
     DECIDIM_DEFAULT_LOCALE="fr"\
     DECIDIM_AVAILABLE_LOCALES="fr,en,pt,pt-BR"\
     DECIDIM_CURRENCY_UNIT="CHF"\
-    INSTANCE_UUID="undefined"
-
+    INSTANCE_UUID="undefined"\
+    DECIDIM_LOG_LEVEL="warn" \
+    SMTP_AUTHENTICATION="plain"\
+    SMTP_USERNAME="my-decidim@gmail.com"\
+    SMTP_PASSWORD="suwbyijyxoppiwwz" \
+    SMTP_ADDRESS="smtp.gmail.com" \
+    SMTP_DOMAIN="gmail.com" \
+    SMTP_STARTTLS_AUTO="enabled"\
+    SMTP_VERIFY_MODE="none"\
+    DECIDIM_PROCESS="puma"\
+    DECIDIM_VERSION=$DECIDIM_VERSION
 
 
 ENV PATH=$PATH:$RAILS_ROOT/bin
@@ -79,11 +86,10 @@ RUN gem update --system && \
         imagemagick \
         bash \
         vim \
-        && rm -rf /var/cache/apk/*
-
-
-# Set bundle config again, to have passing bundle check
-RUN bundle config set without 'development test'
+        busybox-suid \
+        && rm -rf /var/cache/apk/* && \
+    # Set again bundle config, to have bundle check working
+    bundle config set without 'development test'
 
 # Create system user to run as non-root.
 RUN addgroup -S $GROUP -g $GROUP_UID && \
@@ -96,12 +102,13 @@ COPY ./tmp/imagemagick-policy.xml /etc/ImageMagick-7/policy.xml
 # Switch to non-root system user
 USER $USER
 
-# Copy binaries
+# Copy files, installed gems and binaries
 COPY --from=build /usr/local/bundle/ /usr/local/bundle/
 COPY --from=build --chown=$USER:$GROUP /home/$USER/app .
 COPY ./bin bin/
-
-
+COPY ./ci_cd/scripts/crontab /tmp/crontab
+# Install the crontab
+RUN crontab /tmp/crontab
 # Define bash as the default shell
 SHELL ["/bin/bash", "-l", "-c"]
 

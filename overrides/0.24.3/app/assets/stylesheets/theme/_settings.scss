@@ -1,0 +1,11 @@
+/**
+ * Generic theme template for customizing decidim. 
+ * This file is the only one directly in the theme directory, 
+ * and will manually import scss files in sub-directories. 
+ *
+ * Variables are defined before foundation inclusion, in the decidim.scss file.
+ */
+@import 'util/util';
+
+/* @import "./0-styles/buttons"; */
+@import "./3-components/footer";

@@ -1,0 +1,72 @@
+
+<div class="footer">
+  <div class="footer__container">
+    <div class="footer__content hide-for-large">
+      <nav>
+          <ul>
+            <% organization_pages = current_organization.static_pages_accessible_for(current_user) %>
+            <% if organization_pages.any? %>
+              <% current_organization.static_page_topics.where(show_in_footer: true).each do |page_topic| %>
+                <% topic_pages = page_topic.accessible_pages_for(current_user) %>
+                <% if topic_pages.any? %>
+                  <li><%= link_to translated_attribute(page_topic.title), decidim.page_path(topic_pages.first) %></li>
+                <% end %>
+              <% end %>
+              <% organization_pages.where(show_in_footer: true).each do |page| %>
+                <li><%= link_to translated_attribute(page.title), decidim.page_path(page) %></li>
+              <% end %>
+            <% end %>
+            <li><%= link_to t("layouts.decidim.footer.download_open_data"), decidim.open_data_download_path %></li>
+          </ul>
+      </nav>
+      <%= render partial: "layouts/decidim/social_media_links" %>
+    </div>
+    <div class="footer__logo">
+        <% if current_organization.official_img_footer? %>
+          <%= link_to current_organization.official_url, class: "main-footer__badge" do %>
+            <%= image_tag current_organization.official_img_footer.url.to_s , alt: current_organization.name %>
+          <% end %>
+        <% else %>
+            No image
+        <% end %>
+    </div>
+    <div class="footer__content show-for-large">
+      <nav class="footer__nav">
+          <ul>
+            <% organization_pages = current_organization.static_pages_accessible_for(current_user) %>
+            <% if organization_pages.any? %>
+              <% current_organization.static_page_topics.where(show_in_footer: true).each do |page_topic| %>
+                <% topic_pages = page_topic.accessible_pages_for(current_user) %>
+                <% if topic_pages.any? %>
+                  <li><%= link_to translated_attribute(page_topic.title), decidim.page_path(topic_pages.first) %></li>
+                <% end %>
+              <% end %>
+
+              <% organization_pages.where(show_in_footer: true).each do |page| %>
+                <li><%= link_to translated_attribute(page.title), decidim.page_path(page) %></li>
+              <% end %>
+            <% end %>
+            <li><%= link_to t("layouts.decidim.footer.download_open_data"), decidim.open_data_download_path %></li>
+          </ul>
+      </nav>
+      <%= render partial: "layouts/decidim/social_media_links" %>
+      <div class="footer__authoring">
+              <%= t("layouts.decidim.footer.made_with_open_source").html_safe %>
+      </div>
+    </div>
+    <div class="footer__decidim">
+      <a rel="decidim noopener"
+        href="https://decidim.org/"
+        class="footer__decidim-logo"
+        target="_blank">
+        <%= image_tag("decidim_logo.png", alt: t("layouts.decidim.footer.decidim_logo") ) %>
+      </a>
+    
+    </div>
+    <div  class="footer__content hide-for-large">
+        <div class="footer__authoring">
+              <%= t("layouts.decidim.footer.made_with_open_source").html_safe %>
+      </div>
+    </div>
+  </div>
+</div>
