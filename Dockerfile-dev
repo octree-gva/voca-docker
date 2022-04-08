@@ -25,7 +25,7 @@
 ARG ALPINE_RUBY_VERSION=2.7.3
 # Should exists for alpine, see https://unofficial-builds.nodejs.org/download/release/
 ARG NODE_VERSION=v16.13.0 
-ARG USER=decidim
+
 ARG DECIDIM_VERSION
 
 
@@ -41,9 +41,9 @@ ENV BUNDLE_JOBS=4 \
     NVM_ARCH=x64-musl  \
     RAILS_ENV=production \
     RACK_ENV=production \
-    RAILS_ROOT=/home/$USER/app \ 
-    ROOT=/home/$USER/app \ 
-    HOME_PATH=/home/$USER/app \ 
+    RAILS_ROOT=/home/decidim/app \ 
+    ROOT=/home/decidim/app \ 
+    HOME_PATH=/home/decidim/app \ 
     RAILS_ENV=production \
     RACK_ENV=production\
     DATABASE_HOST="pg" \
@@ -121,7 +121,6 @@ RUN touch $RAILS_ROOT/.profile && \
 
 # Add the overrides
 COPY ./overrides/$DECIDIM_VERSION .
-RUN cat ./.override
 
 # Install gems migrations
 # Prepare bundler to work only with production gems.
@@ -131,16 +130,21 @@ RUN bundle config set without 'development test' && \
 # Rename migrations, to be consistent over time.
 COPY ./ci_cd/scripts/rename-migrations.sh ./.docker/rename-migrations.sh
 RUN tar cfz migrations.bak.tar.gz $RAILS_ROOT/db/migrate && \
-    ./.docker/rename-migrations.sh 202101 && \
     mkdir db/migrate/tmp && \
+    ./.docker/rename-migrations.sh 202101 && \
     mv db/migrate/*.rb db/migrate/tmp/ && \
+    # Install Decidim Conference
     bundle exec rails decidim_conferences:install:migrations && \
-    ./.docker/rename-migrations.sh 202102 && \
-    mv db/migrate/*.rb db/migrate/tmp/ && \
+    ./.docker/rename-migrations.sh 202102 &&  mv db/migrate/*.rb db/migrate/tmp/ && \
+    # Install Awesome Decidim
     bundle exec rails decidim_decidim_awesome:install:migrations && \
-    ./.docker/rename-migrations.sh 202103 && \
+    ./.docker/rename-migrations.sh 202103 &&  mv db/migrate/*.rb db/migrate/tmp/ && \
+    # Install Term Customizer Decidim
+    bundle exec rails decidim_term_customizer:install:migrations && \
+    ./.docker/rename-migrations.sh 202104 && mv db/migrate/*.rb db/migrate/tmp/ && \
     mv db/migrate/tmp/*.rb db/migrate/ && rm -rf db/migrate/tmp &&\
     rm -rf ./.docker && rm -rf ./.git
 
 # Define bash as the default shell
-SHELL ["/bin/bash", "-l", "-c"]
+SHELL ["/bin/bash", "-c"]
+CMD ["bundle", "exec", "rails", "s"]
