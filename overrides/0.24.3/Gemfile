@@ -6,11 +6,15 @@ gem "decidim", "~> 0.24.3"
 gem "decidim-conferences", "~> 0.24.3"
 gem "decidim-decidim_awesome", "~> 0.7.2"
 gem "decidim-term_customizer", git: "https://github.com/mainio/decidim-module-term_customizer", branch: "0.24-stable"
+
 gem "bootsnap", "~> 1.5", ">= 1.5.1"
 gem "puma", "~> 5.1", ">= 5.1.1"
-gem "uglifier", "~> 4.2.0"
 gem "rails", "~> 5.2.6"
+gem 'sidekiq', '~> 6.4', '>= 6.4.1'
+gem "hiredis", '~> 0.6.3'
+gem "redis", ">= 3.2.0"
 
+gem "uglifier", "~> 4.2.0"
 group :development, :test do
   gem "byebug", "~> 11.0", platform: :mri
   gem "decidim-dev", "~> 0.24.3"
@@ -23,9 +27,6 @@ group :development do
 end
 
 group :production do
-  gem 'sidekiq', '~> 6.4', '>= 6.4.1'
-  gem "hiredis", '~> 0.6.3'
-  gem "redis", ">= 3.2.0"
   gem 'mini_racer', '~> 0.6.2'  
   gem 'rack-attack', "~> 6.0"
   gem "sprockets", "~> 3.7"

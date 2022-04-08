@@ -1,17 +1,10 @@
 ARG ALPINE_RUBY_VERSION=2.7.3
 # Should exists for alpine, see https://unofficial-builds.nodejs.org/download/release/
 ARG NODE_VERSION=v16.13.0 
-ARG USER=decidim
-ARG USER_UID=1001
-ARG GROUP=admin
-ARG GROUP_UID=1001
 ARG DEV_PATH
 ARG DECIDIM_VERSION=0.24.3
 
 FROM $DEV_PATH  AS build
-RUN SECRET_KEY_BASE=assets bundle exec rails assets:precompile
-
-
 
 FROM ruby:${ALPINE_RUBY_VERSION}-alpine
 LABEL contact.creator="hadrien@octree.ch"\
@@ -25,16 +18,12 @@ ARG USER_UID
 ARG GROUP
 ARG GROUP_UID
 ARG DECIDIM_VERSION
-ENV USER=$USER \
-    USER_UID=$USER_UID \
-    GROUP=$GROUP\
-    GROUP_UID=$GROUP_UID \
-    NODE_VERSION=$NODE_VERSION \
+ENV NODE_VERSION=$NODE_VERSION \
     RAILS_ENV=production \
     RACK_ENV=production \
-    RAILS_ROOT=/home/$USER/app \ 
-    ROOT=/home/$USER/app \ 
-    HOME_PATH=/home/$USER/app \ 
+    RAILS_ROOT=/home/decidim/app \ 
+    ROOT=/home/decidim/app \ 
+    HOME_PATH=/home/decidim/app \ 
     RAILS_ENV=production \
     RACK_ENV=production\
     DATABASE_HOST="pg" \
@@ -59,6 +48,7 @@ ENV USER=$USER \
     JOB_REDIS_URL="redis://username:password@redis:6379/1"\
     GEO_HERE_API=""\
     DECIDIM_DEFAULT_LOCALE="fr"\
+    # Available locales for the current instance
     DECIDIM_AVAILABLE_LOCALES="fr,en,pt,pt-BR"\
     DECIDIM_CURRENCY_UNIT="CHF"\
     INSTANCE_UUID="undefined"\
@@ -72,8 +62,6 @@ ENV USER=$USER \
     SMTP_VERIFY_MODE="none"\
     DECIDIM_PROCESS="puma"\
     DECIDIM_VERSION=$DECIDIM_VERSION
-
-
 ENV PATH=$PATH:$RAILS_ROOT/bin
 
 WORKDIR $RAILS_ROOT
@@ -92,25 +80,25 @@ RUN gem update --system && \
     bundle config set without 'development test'
 
 # Create system user to run as non-root.
-RUN addgroup -S $GROUP -g $GROUP_UID && \
-    adduser -S -g '' -u $USER_UID -G $GROUP $USER
-
+RUN addgroup -S decidim -g 1001 && \
+    adduser -S -g '' -u 1001 -G decidim decidim
 
 # Add imagemagick policy
 COPY ./tmp/imagemagick-policy.xml /etc/ImageMagick-7/policy.xml
 
 # Switch to non-root system user
-USER $USER
-
-# Copy files, installed gems and binaries
-COPY --from=build /usr/local/bundle/ /usr/local/bundle/
-COPY --from=build --chown=$USER:$GROUP /home/$USER/app .
-COPY ./bin bin/
+USER decidim
 COPY ./ci_cd/scripts/crontab /tmp/crontab
 # Install the crontab
 RUN crontab /tmp/crontab
+
+# Copy files, installed gems and binaries
+COPY --from=build /usr/local/bundle/ /usr/local/bundle/
+COPY --from=build --chown=decidim:decidim $RAILS_ROOT .
+COPY ./bin bin/
+
 # Define bash as the default shell
-SHELL ["/bin/bash", "-l", "-c"]
+SHELL ["/bin/bash", "-c"]
 
 ENTRYPOINT ["$RAILS_ROOT/bin/entrypoint.sh"]
-CMD ["bin/start $DECIDIM_PROCESS"]
+CMD ["bin/start.sh $DECIDIM_PROCESS"]
