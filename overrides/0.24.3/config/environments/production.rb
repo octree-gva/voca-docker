@@ -1,6 +1,6 @@
 require "#{Rails.root}/lib/decidim/logger_proxy"
 Rails.application.configure do
-  def env_enabled?(env_name, default_value="disabled")
+  def env_enabled?(env_name, default_value = "disabled")
     ["true", "1", "enabled"].include? ENV.fetch(env_name, default_value)
   end
   # Settings specified here will take precedence over those in config/application.rb.
@@ -24,10 +24,10 @@ Rails.application.configure do
 
   # Disable serving static files from the `/public` folder by default since
   # Apache or NGINX already handles this.
-  config.public_file_server.enabled = env_enabled?('RAILS_SERVE_STATIC_FILES')
+  config.public_file_server.enabled = env_enabled?("RAILS_SERVE_STATIC_FILES")
 
   # Compress JavaScripts and CSS.
-  config.assets.js_compressor = Uglifier.new(:harmony => true)
+  config.assets.js_compressor = Uglifier.new(harmony: true)
   # config.assets.css_compressor = :sass
 
   # Do not fallback to assets pipeline if a precompiled asset is missed.
@@ -59,10 +59,10 @@ Rails.application.configure do
 
   # Prepend all log lines with the following tags.
   config.log_tags = [ :request_id ]
-  
+
   # Use a different cache store in production.
   if ENV.fetch("RAILS_CACHE_MODE", "disabled") == "redis" && ENV["RAILS_CACHE_REDIS_URL"].present?
-    config.cache_store = :redis_cache_store, { url: ENV.fetch('RAILS_CACHE_REDIS_URL')}
+    config.cache_store = :redis_cache_store, { url: ENV.fetch("RAILS_CACHE_REDIS_URL") }
   end
 
   # Use a real queuing backend for Active Job (and separate queues per environment)
@@ -78,6 +78,7 @@ Rails.application.configure do
   # Enable locale fallbacks for I18n (makes lookups for any locale fall back to
   # the I18n.default_locale when a translation cannot be found).
   config.i18n.fallbacks = true
+  config.action_view.raise_on_missing_translations = false
 
   # Send deprecation notices to registered listeners.
   config.active_support.deprecation = :notify
@@ -103,7 +104,7 @@ Rails.application.configure do
 
   if env_enabled?("RAILS_LOG_DAILY")
     file = "#{Rails.root}/log/#{ENV.fetch('RAILS_LOG_DAILY_FILENAME', 'production.log')}"
-    logger = ActiveSupport::Logger.new("#{file}", 'daily')
+    logger = ActiveSupport::Logger.new("#{file}", "daily")
     logger.formatter = config.log_formatter
     config.logger.add(ActiveSupport::TaggedLogging.new(logger))
   end
