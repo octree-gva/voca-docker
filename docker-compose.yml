@@ -1,0 +1,66 @@
+# Docker-compose for the 0.24.3 overrides (lastest)
+
+version: "3"
+services:
+  app:
+    container_name: decidim_app
+    build:
+      context: .
+      dockerfile: ./Dockerfile-dev
+      args:
+        - DECIDIM_VERSION=0.24.3
+        - NODE_VERSION=14.16.1
+        - ALPINE_RUBY_VERSION=2.7.1
+    environment:
+      - RAILS_ENV=development
+      - RACK_ENV=development
+      - DATABASE_HOST=pg
+      - SECRET_KEY_BASE="DEV-ahngae3ooCh5wool3xaefii8Neib7oc7mei2viejingaGhee7paephoneeThia6Ooshiexoab5ib1phirolah7tooMu3Oheixaigh7eeV5eef6Zei0dur9oth4zaicha"
+      - DATABASE_USERNAME=decidim
+      - DATABASE_PASSWORD=DEV-ovi8ooL2aiv9yooTh5eo5ih2oocae6jo
+      - DATABASE_DATABASE=decidim_dev
+      - PORT=3000
+      # In dev, run only in one thread, easier to debug DB connection issues.
+      - RAILS_MAX_THREADS=1
+      # In dev, you will serve assets as you don't have here a configured reverse-proxy
+      - RAILS_SERVE_STATIC_FILES=true
+      # Setup mailcatcher (see config/environments/development)
+      - SMTP_DOMAIN=mailer
+      - SMTP_PORT=25
+    ports:
+      - 3000:3000
+    depends_on:
+      - pg
+      - mailer
+    networks:
+      - private
+      - default
+    volumes:
+      - ./.uploads:/home/decidim/app/public/uploads
+
+
+  pg:
+    container_name: decidim_db
+    image: postgres:14
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=DEV-_^+3{,ewt{_bgA@X!;(p,;na-}4x9h*Y
+      - POSTGRES_USER=decidim
+      - POSTGRES_DB=decidim_dev
+    networks:
+      - private
+
+  mailer:  
+    image: tophfr/mailcatcher
+    ports:
+      - "1080:80"
+    networks:
+      - private
+      - default
+
+volumes:
+  pg-data: {}
+networks:
+  private:
+    internal: true
