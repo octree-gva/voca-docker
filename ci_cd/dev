@@ -12,8 +12,9 @@ do
             --dockerfile $DOCKER_PATH-dev \
             --build-arg NODE_VERSION=$node_version \
             --build-arg ALPINE_RUBY_VERSION=$ruby_version \
+            --build-arg DECIDIM_VERSION=$decidim_version \
             --destination $REG/$REP_GRP:$TAG \
-            --cache 
+            --verbosity=error
         break
     fi
 done < versions.csv

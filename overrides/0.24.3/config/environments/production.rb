@@ -1,6 +1,6 @@
 require "#{Rails.root}/lib/decidim/logger_proxy"
 Rails.application.configure do
-  def env_enabled?(env_name, default_value="disabled")
+  def env_enabled?(env_name, default_value = "disabled")
     ["true", "1", "enabled"].include? ENV.fetch(env_name, default_value)
   end
   # Settings specified here will take precedence over those in config/application.rb.
@@ -24,10 +24,10 @@ Rails.application.configure do
 
   # Disable serving static files from the `/public` folder by default since
   # Apache or NGINX already handles this.
-  config.public_file_server.enabled = env_enabled?('RAILS_SERVE_STATIC_FILES')
+  config.public_file_server.enabled = env_enabled?("RAILS_SERVE_STATIC_FILES")
 
   # Compress JavaScripts and CSS.
-  config.assets.js_compressor = Uglifier.new(:harmony => true)
+  config.assets.js_compressor = Uglifier.new(harmony: true)
   # config.assets.css_compressor = :sass
 
   # Do not fallback to assets pipeline if a precompiled asset is missed.
@@ -55,14 +55,14 @@ Rails.application.configure do
 
   # Use the lowest log level to ensure availability of diagnostic information
   # when problems arise.
-  # config.log_level = :debug
+  config.log_level = ENV.fetch("DECIDIM_LOG_LEVEL", "debug").to_sym
 
   # Prepend all log lines with the following tags.
   config.log_tags = [ :request_id ]
-  
+
   # Use a different cache store in production.
   if ENV.fetch("RAILS_CACHE_MODE", "disabled") == "redis" && ENV["RAILS_CACHE_REDIS_URL"].present?
-    config.cache_store = :redis_cache_store, { url: ENV.fetch('RAILS_CACHE_REDIS_URL')}
+    config.cache_store = :redis_cache_store, { url: ENV.fetch("RAILS_CACHE_REDIS_URL") }
   end
 
   # Use a real queuing backend for Active Job (and separate queues per environment)
@@ -78,21 +78,21 @@ Rails.application.configure do
   # Enable locale fallbacks for I18n (makes lookups for any locale fall back to
   # the I18n.default_locale when a translation cannot be found).
   config.i18n.fallbacks = true
+  config.action_view.raise_on_missing_translations = false
 
   # Send deprecation notices to registered listeners.
   config.active_support.deprecation = :notify
 
-
-
+  config.action_mailer.delivery_method = :smtp
   config.action_mailer.smtp_settings = {
-    :address        => Rails.application.secrets.smtp_address,
-    :port           => Rails.application.secrets.smtp_port,
-    :authentication => Rails.application.secrets.smtp_authentication,
-    :user_name      => Rails.application.secrets.smtp_username,
-    :password       => Rails.application.secrets.smtp_password,
-    :domain         => Rails.application.secrets.smtp_domain,
-    :enable_starttls_auto => Rails.application.secrets.smtp_starttls_auto,
-    :openssl_verify_mode => 'none'
+    address: ENV.fetch("SMTP_ADDRESS", ""),
+    port: ENV.fetch("SMTP_PORT", "587"),
+    authentication: ENV.fetch("SMTP_AUTHENTICATION", "plain"),
+    user_name: ENV.fetch("SMTP_USERNAME", ""),
+    password: ENV.fetch("SMTP_PASSWORD", ""),
+    domain: ENV.fetch("SMTP_DOMAIN") { ENV.fetch("SMTP_ADDRESS", "") },
+    enable_starttls_auto: env_enabled?("SMTP_STARTTLS_AUTO", "enabled"),
+    openssl_verify_mode: ENV.fetch("SMTP_VERIFY_MODE", "none")
   }
 
   # Use a different logger for distributed setups.
@@ -104,7 +104,7 @@ Rails.application.configure do
 
   if env_enabled?("RAILS_LOG_DAILY")
     file = "#{Rails.root}/log/#{ENV.fetch('RAILS_LOG_DAILY_FILENAME', 'production.log')}"
-    logger = ActiveSupport::Logger.new("#{file}", 'daily')
+    logger = ActiveSupport::Logger.new("#{file}", "daily")
     logger.formatter = config.log_formatter
     config.logger.add(ActiveSupport::TaggedLogging.new(logger))
   end

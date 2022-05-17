@@ -8,8 +8,9 @@ Decidim.configure do |config|
 
   # Change these lines to set your preferred locales
 
-  config.default_locale = ENV.fetch("DECIDIM_DEFAULT_LOCALE").to_sym
-  config.available_locales = ENV.fetch("DECIDIM_AVAILABLE_LOCALES").split(",").map(&:to_sym)
+  config.default_locale = ENV.fetch("DECIDIM_DEFAULT_LOCALE", "en").to_sym
+  # Don't restrict the available locales, let all by default. 
+  # config.available_locales = ENV.fetch("DECIDIM_AVAILABLE_LOCALES").split(",").map(&:to_sym)
 
   # Geocoder configuration
   unless ENV.fetch("GEO_HERE_API", "").blank?
@@ -37,7 +38,7 @@ Decidim.configure do |config|
   # config.content_processors = []
 
   # Whether SSL should be enabled or not.
-  # config.force_ssl = true
+  config.force_ssl = ["true", "enabled"].include?(ENV.fetch("RAILS_FORCE_SSL", "disabled"))
 
   # Map and Geocoder configuration
   #
@@ -103,7 +104,7 @@ Decidim.configure do |config|
 
   # Defines the quality of image uploads after processing. Image uploads are
   # processed by Decidim, this value helps reduce the size of the files.
-  # config.image_uploader_quality = 80
+  config.image_uploader_quality = 100
 
   # The number of reports which a resource can receive before hiding it
   # config.max_reports_before_hiding = 3

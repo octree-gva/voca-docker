@@ -1,0 +1,37 @@
+# PostgreSQL. Versions 9.1 and up are supported.
+#
+# Install the pg driver:
+#   gem install pg
+# On OS X with Homebrew:
+#   gem install pg -- --with-pg-config=/usr/local/bin/pg_config
+# On OS X with MacPorts:
+#   gem install pg -- --with-pg-config=/opt/local/lib/postgresql84/bin/pg_config
+# On Windows:
+#   gem install pg
+#       Choose the win32 build.
+#       Install PostgreSQL and put its /bin directory on your path.
+#
+# Configure Using Gemfile
+# gem 'pg'
+#
+# On Linux, the 'host: "localhost"' line below should be commented out to avoid 'password required' error.
+#
+default: &default
+  adapter: postgresql
+  encoding: unicode
+
+  pool: <%= ENV.fetch("DATABASE_MAX_POOLS") { 5 } %>
+  host: <%= ENV.fetch("DATABASE_HOST") { "localhost" } %>
+  port: <%= ENV.fetch("DATABASE_PORT") { "5432" } %>
+  username: <%= ENV.fetch("DATABASE_USERNAME") { "" } %>
+  password: <%= ENV.fetch("DATABASE_PASSWORD") { "" } %>
+  database: <%= ENV.fetch("DATABASE_DATABASE") { "decidim" } %>
+
+development:
+  <<: *default
+test:
+  <<: *default
+  database: <%= ENV.fetch("DATABASE_DATABASE") { "decidim" } %>_test
+production:
+  <<: *default
+

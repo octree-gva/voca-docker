@@ -13,9 +13,10 @@ do
             --dockerfile $DOCKER_PATH-production \
             --build-arg DEV_PATH=$REG/$DEV_REP_GRP:$TAG \
             --build-arg NODE_VERSION=$node_version \
+            --build-arg DECIDIM_VERSION=$decidim_version \
             --build-arg ALPINE_RUBY_VERSION=$ruby_version \
             --destination $REG/$REP_GRP:$TAG \
-            --cache 
+            --verbosity=error
         break
     fi
 

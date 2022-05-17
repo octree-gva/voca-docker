@@ -1,0 +1,16 @@
+################################
+# Cron tabs for decidim, 
+# will run these tasks on background (sidekiq instance).
+################################
+# Remove expired data portability files
+0 4 0 3 ? * MON-FRI * /bin/bash -l -c "if [[ ${DECIDIM_PROCESS:-\"puma\"} == \"sidekiq\" ]]; then cd $RAILS_ROOT && bundle exec rake decidim:delete_data_portability_files --silent; fi"
+# Compute metrics
+1 4 0 8 ? * MON-FRI * /bin/bash -l -c "if [[ ${DECIDIM_PROCESS:-\"puma\"} == \"sidekiq\" ]]; then cd $RAILS_ROOT && bundle exec rake decidim:metrics:all --silent; fi"
+# Compute open data
+2 0 0/4 1/1 * ? * /bin/bash -l -c "if [[ ${DECIDIM_PROCESS:-\"puma\"} == \"sidekiq\" ]]; then cd $RAILS_ROOT && bundle exec rake decidim:open_data:export --silent; fi"
+# Delete old registrations forms
+3 0 0 6 ? * MON-FRI * /bin/bash -l -c "if [[ ${DECIDIM_PROCESS:-\"puma\"} == \"sidekiq\" ]]; then cd $RAILS_ROOT && bundle exec rake decidim_meetings:clean_registration_forms --silent; fi"
+# Generate reminders # DEPRECATED?
+# 4 0 8 ? * MON-FRI * /bin/bash -l -c "if [[ ${DECIDIM_PROCESS:-\"puma\"} == \"sidekiq\" ]]; then cd $RAILS_ROOT && bundle exec rake decidim:reminders:all --silent; fi"
+
+

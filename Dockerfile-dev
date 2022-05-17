@@ -25,32 +25,33 @@
 ARG ALPINE_RUBY_VERSION=2.7.3
 # Should exists for alpine, see https://unofficial-builds.nodejs.org/download/release/
 ARG NODE_VERSION=v16.13.0 
-ARG USER=decidim
-ARG DECIDIM_VERSION=0.24.3
+
+ARG DECIDIM_VERSION
 
 
 FROM ruby:${ALPINE_RUBY_VERSION}-alpine
 ARG NODE_VERSION
 ARG USER
-
+ARG DECIDIM_VERSION
 ENV BUNDLE_JOBS=4 \
     BUNDLE_RETRY=3 \
     NODE_VERSION=$NODE_VERSION \
-    RAILS_ROOT=/home/$USER/app \ 
     NVM_DIR=/usr/local/nvm \
     NVM_NODEJS_ORG_MIRROR=https://unofficial-builds.nodejs.org/download/release \
     NVM_ARCH=x64-musl  \
     RAILS_ENV=production \
+    RACK_ENV=production \
+    RAILS_ROOT=/home/decidim/app \ 
+    ROOT=/home/decidim/app \ 
+    HOME_PATH=/home/decidim/app \ 
+    RAILS_ENV=production \
     RACK_ENV=production\
-    USER=$USER \
-    # Dummy env variables.
-    # This way your deployment provider can already display nice UI
-    # on available environments.
     DATABASE_HOST="pg" \
     DATABASE_USERNAME="example" \
     DATABASE_PASSWORD="my-insecure-password" \
     DATABASE_DATABASE="decidim" \
     PORT=3000\
+    DOCKER_EXPOSED_PORT=3000 \
     RAILS_MAX_THREAD=5\
     RAILS_FORCE_SSL="enabled" \
     RAILS_SERVE_STATIC_FILES="false"\
@@ -68,24 +69,33 @@ ENV BUNDLE_JOBS=4 \
     GEO_HERE_API=""\
     DECIDIM_DEFAULT_LOCALE="fr"\
     DECIDIM_AVAILABLE_LOCALES="fr,en,pt,pt-BR"\
-    DECIDIM_CURRENCY_UNIT="CHF"
+    DECIDIM_CURRENCY_UNIT="CHF"\
+    INSTANCE_UUID="undefined"\
+    DECIDIM_LOG_LEVEL="warn" \
+    SMTP_AUTHENTICATION="plain"\
+    SMTP_USERNAME="my-decidim@gmail.com"\
+    SMTP_PASSWORD="suwbyijyxoppiwwz" \
+    SMTP_ADDRESS="smtp.gmail.com" \
+    SMTP_DOMAIN="gmail.com" \
+    SMTP_STARTTLS_AUTO="enabled"\
+    SMTP_VERIFY_MODE="none"\
+    DECIDIM_PROCESS="puma" \
+    DECIDIM_VERSION=${DECIDIM_VERSION:-0.24.3}
 
-ENV PATH=$PATH:$NVM_DIR
 
 WORKDIR $RAILS_ROOT
 
-RUN mkdir -p $NVM_DIR
-
-# Install dependencies:
-# - build-base: To ensure certain gems can be compiled
-# - postgresql-dev postgresql-client: Communicate with postgres through the postgres gem
-# - libxslt-dev libxml2-dev: Nokogiri native dependencies
-# - imagemagick: for image processing
-# - git: for gemfiles using git 
-# - bash curl: to download nvm and install it
-# - libstdc++: to build NVM
-RUN gem update --system && \
-    gem install bundler && \
+RUN mkdir -p $NVM_DIR && \
+    gem update --system && \
+    gem install bundler --silent && \
+    # Install dependencies:
+    # - build-base: To ensure certain gems can be compiled
+    # - postgresql-dev postgresql-client: Communicate with postgres through the postgres gem
+    # - libxslt-dev libxml2-dev: Nokogiri native dependencies
+    # - imagemagick: for image processing
+    # - git: for gemfiles using git 
+    # - bash curl: to download nvm and install it
+    # - libstdc++: to build NVM
     apk --update --no-cache add \
         build-base \
         tzdata \
@@ -102,26 +112,43 @@ RUN touch $RAILS_ROOT/.profile && \
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash; \
     source $NVM_DIR/nvm.sh; \
     echo "nvm_get_arch() { nvm_echo \"x64-musl\"; }" >> $RAILS_ROOT/.profile; source $RAILS_ROOT/.profile;\
-    nvm install $NODE_VERSION
-
-
-
-COPY ./bin/* ./bin/
-
-# Run the generator
-RUN source $NVM_DIR/nvm.sh; nvm use $NODE_VERSION && \
-    gem install decidim -v "$DECIDIM_VERSION" && \
+    nvm install $NODE_VERSION --no-progress --default && \
+    npm install --global yarn && \
+    gem install decidim -v "$DECIDIM_VERSION" --silent && \
     decidim . && \
     gem cleanup decidim
 
-# Rename migrations, to be consistent over time.
-COPY ./ci_cd/scripts/rename-migrations.sh ./.docker/rename-migrations.sh
-RUN ./.docker/rename-migrations.sh && rm -rf ./.docker && rm -rf ./.git
 
 # Prepare bundler to work only with production gems.
 RUN bundle config set without 'development test' && \
     bundle install && \
     bundle binstubs --all
 # Add the overrides
-COPY ./overrides/$DECIDIM_VERSION/* ./
+COPY ./overrides/$DECIDIM_VERSION .
 
+# Install gems migrations
+# Prepare bundler to work only with production gems.
+RUN bundle config set without 'development test' && \
+    bundle install --quiet
+    
+# Rename migrations, to be consistent over time.
+COPY ./ci_cd/scripts/rename-migrations.sh ./.docker/rename-migrations.sh
+RUN tar cfz migrations.bak.tar.gz $RAILS_ROOT/db/migrate && \
+    mkdir db/migrate/tmp && \
+    ./.docker/rename-migrations.sh 202101 && \
+    mv db/migrate/*.rb db/migrate/tmp/ && \
+    # Install Decidim Conference
+    bundle exec rails decidim_conferences:install:migrations && \
+    ./.docker/rename-migrations.sh 202102 &&  mv db/migrate/*.rb db/migrate/tmp/ && \
+    # Install Awesome Decidim
+    bundle exec rails decidim_decidim_awesome:install:migrations && \
+    ./.docker/rename-migrations.sh 202103 &&  mv db/migrate/*.rb db/migrate/tmp/ && \
+    # Install Term Customizer Decidim
+    bundle exec rails decidim_term_customizer:install:migrations && \
+    ./.docker/rename-migrations.sh 202104 && mv db/migrate/*.rb db/migrate/tmp/ && \
+    mv db/migrate/tmp/*.rb db/migrate/ && rm -rf db/migrate/tmp &&\
+    rm -rf ./.docker && rm -rf ./.git
+
+# Define bash as the default shell
+SHELL ["/bin/bash", "-c"]
+CMD ["bundle", "exec", "rails", "s"]

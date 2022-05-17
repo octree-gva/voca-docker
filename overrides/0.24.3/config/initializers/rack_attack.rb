@@ -1,3 +1,4 @@
+require "rack/attack"
 safelist_ips = ENV.fetch('SAFELIST_IPS', '')
 if safelist_ips.present?
     safelist_ips.split(',').each do |safelist_ip|
