@@ -17,6 +17,17 @@ do
             --build-arg ALPINE_RUBY_VERSION=$ruby_version \
             --destination $REG/$REP_GRP:$TAG \
             --verbosity=error
+        echo "{\"auths\":{\"https://index.docker.io/v1/\":{\"auth\":\"$DOCKERHUB_AUTH\"}}}" > /kaniko/.docker/config.json
+        /kaniko/executor \
+            --context "$CI_PROJECT_DIR" \
+            --dockerfile $DOCKER_PATH-production \
+            --build-arg DEV_PATH=$REG/$DEV_REP_GRP:$TAG \
+            --build-arg NODE_VERSION=$node_version \
+            --build-arg DECIDIM_VERSION=$decidim_version \
+            --build-arg ALPINE_RUBY_VERSION=$ruby_version \
+            --destination octree/voca-decidim-public:$TAG \
+            --verbosity=error
+
         break
     fi
 
