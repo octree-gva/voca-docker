@@ -31,3 +31,10 @@ group :production do
   gem 'rack-attack', "~> 6.0"
   gem "sprockets", "~> 3.7"
 end
+
+ENV['RAILS_ROOT'] ||= File.dirname(__FILE__)
+require File.join(ENV['RAILS_ROOT'], 'lib/decidim/marketplace.rb')
+Decidim::Marketplace.each_gem do |gem_config, gem_attributes| 
+  puts "Add #{gem_config}", gem_attributes
+  gem *gem_config, **gem_attributes
+end
